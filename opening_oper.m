@@ -1,4 +1,4 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%% erosion_oper.m file %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% opening_oper.m file %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Purpose:  
 %      Perform erosion operation on the input image
 %
@@ -7,27 +7,26 @@
 %      B_str  structuring element using which operation will be performed
 %      
 % Returned Results:
-%      Out_Img     eroded image
+%      Out_Img     opened image
 %
 % Processing Flow:
-%      1.  Compute size of input image and calculate float of 
-%          size(structuring element)/2
-%      2.  Iterate the image such that the entire structuring element is
-%          fit into the image.
-%      3.  If a any value of image and structuring element do not match
-%          then set the Out_Img to '1' else to '0' and break
-%      4.  Repeat steps 2 & 3 until all the elements are accessed
+%      1.  Perform erosion operation on the input image
+%      2.  Next perform dilation considering the eroded image to obtain the
+%          opened image
+%
+% The following functions are called:
+%      dilation_oper.m       perform the dilation operation
+%      erosion_oper.m        perform the erosion operation
 %
 %
 % Author:      Sweekar Sudhakara, Savinay Nagendra, Nagarjuna Pampana and
 %              Prapti Panigrahi
-% Date:        2/5/2021
+% Date:        2/26/2021
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function Out_Img = opening_oper(X, B_str)
     
-    Eroded_Img = erosion_oper(X, B_str);
-    
+    Eroded_Img = erosion_oper(X, B_str);    
     Out_Img = dilation_oper(Eroded_Img, B_str');
     
 end

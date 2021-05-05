@@ -1,122 +1,127 @@
-%%%%%%%%%%%%% main.m file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Purpose:  
-%      Skeletonization
+%%%%%%%%%%%%%%%%%%%%%% main_shape_analysis.m file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Purpose:
+%       1. Given image "match1.gif", perform object extraction using bwlabel
+%          and calculate the size distribution U(n), pectrum f(n),
+%          and complexity H(X|B) for each object. 
+%       2. Also, based on the pecstral value, determine the distance as per eqn.(6.11.10) PitasCh6 to
+%          match the objects in "match1.gif" to objects in "match3.gif". 
 %
 % Input Variables:
-%      Img             input image
-%      
+%       img     "match1.gif"
+%
 % Returned Results:
-%      Large_Disk_Img  large disk image
-%      Small_Disk_Img  small disk image
-%      Comb_Img        combination of large & small disk image
+%       distance      distance obtained from eqn.(6.11.10) PitasCh6
 %
 % Processing Flow:
-%      1.  Read the image.
-%      2.  Convert the image to binary image with threshold of 127
-%      3.  Remove the salt & pepper noise from the binary image using median 
-%          filter
-%      4.  Create disk shape structuring elements with radii 30 & 8
-%      5.  Create window based structuring elements with size 35 & 10
-%      6.  Perform hit-or-miss transformation to obtain disks with specific
-%          size
-%      7.  Highlight the disks and save them on the machine
-%      8.  Repeat steps 6 & 7 on the binary image containing noise
+%       1.  Calculate the size distribution, pecstrum and shape complexity of the images
+%           function.
+%       2.  Determine the distance as per eqn.(6.11.10) PitasCh6 to calculate matching objects.
 %
-%
-% The following functions are called:
-%      imread.m              read the image
-%      apply_threshold.m     convert the image to a binary image with threshold of 127
-%      hit_or_miss_transf.m  perform the hit or miss transform on the denoised binary image
-%      imwrite.m             saves the image
-%      generate_image.m      generates the object in the image based on the intersection
-%      compute_union.m       performs union on the 2 disk shape images
+% The functions being called are:      shape_analysis
+%                                      compute_distance
+%                                      image_cleanup 
 %
 % Author:      Sweekar Sudhakara, Savinay Nagendra, Nagarjuna Pampana and
 %              Prapti Panigrahi
-% Date:        2/5/2021
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Date:        2/23/2021
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-clear;      % Clear out all memory 
+clc;
+clear all;
+close all;
 
-Img = double(imread('penn256.gif'));
-figure; imshow(Img); 
+% Read Image
+img = 'match1.gif';
+[Un_ref, Fn_ref, Hxb_ref] = shape_analysis(img, 0, 0);
+[m,n] = size(Un_ref);
 
-% 3 x 3 SQUARE
+%Plots
+% Figure 1
+figure();
+hold on;
+plot(Un_ref(1,:),'.', 'MarkerSize',24);
+plot(Un_ref(1,:));
+xlabel('radius');
+ylabel('Area');
+title('Size distribution of Clover in match1.gif');
 
-Sqr_Struc_Elem = ones(3,3);
+% Figure 2
+figure();
+hold on;
+plot(Un_ref(2,:),'.', 'MarkerSize',24);
+plot(Un_ref(2,:));
+xlabel('radius');
+ylabel('Area');
+title('Size distribution of Steer in match1.gif');
 
-[Out_Img, Out_RGB_Img, S_X, count] = skeletonization(Img, Sqr_Struc_Elem, 3, false);
-figure; imshow(Out_Img); figure; imshow(Out_RGB_Img);
+% Figure 3
+figure();
+hold on;
+plot(Un_ref(3,:),'.', 'MarkerSize',24);
+plot(Un_ref(3,:));
+xlabel('radius');
+ylabel('Area');
+title('Size distribution of Aeroplane in match1.gif');
 
-% 'n_part_ct' decides partial reconstruction and 'n_part_ct' is 1 value greater than 'n'
-n_part_ct = 3; % (n+1)
-Recon_Img = reconstruction(S_X, Sqr_Struc_Elem, n_part_ct);
-figure; imshow(Recon_Img);
+% Figure 4
+figure();
+hold on;
+plot(Un_ref(4,:),'.', 'MarkerSize',24);
+plot(Un_ref(4,:));
+xlabel('radius');
+ylabel('Area');
+title('Size distribution of Spade in match1.gif');
+
+% Figure 5
+y = [0:1:14];
+figure, stem(y, Fn_ref(1,:));
+xlabel('radius');
+ylabel('Pecstrum Values');
+title('Pecstrum of Clover in image match1.gif');
+
+% Figure 6
+y = [0:1:14];
+figure, stem(y, Fn_ref(2,:));
+xlabel('radius');
+ylabel('Pecstrum Values');
+title('Pecstrum of Steer in image match1.gif');
+
+% Figure 7
+y = [0:1:14];
+figure, stem(y, Fn_ref(3,:));
+xlabel('radius');
+ylabel('Pecstrum Values');
+title('Pecstrum of Aeroplane in image match1.gif');
+
+% Figure 8
+y = [0:1:14];
+figure, stem(y, Fn_ref(4,:));
+xlabel('radius');
+ylabel('Pecstrum Values');
+title('Pecstrum of Spade in image match1.gif');
+
+% Object Matching
+% Read Image
+img = 'match3.gif';
+[Un, Fn, Hxb] = shape_analysis(img, 0, 0);
+
+% weights
+c_n = [1,1,1,1,1,1,1,0,0,0,0,0,0,0,0];
+
+dist_arr = compute_distance(Fn_ref, Fn, c_n);
+
+% Peanuts Matching
+img = 'shadow1.gif';
+im_after_correction = image_cleanup(img);
+[Un2_ref, Fn2_ref, Hxb2_ref] = shape_analysis(img, 1, im_after_correction);
+
+img = 'shadow1rotated.gif';
+im_after_correction = image_cleanup(img);
+[Un2, Fn2, Hxb2] = shape_analysis(img, 1, im_after_correction);
+
+% weights
+c_n2 = [1,1,1,0.8,0.7,0.1,0,0,0,0,0,0,0,0,0];
+
+dist_arr_peanuts = compute_distance(Fn2_ref, Fn2, c_n2);
 
 
-% RHOMBUS
-
-Struc_Elem = ones(3,3);
-Struc_Elem(1,1) = 0; Struc_Elem(1,3) = 0; Struc_Elem(3,1) = 0; Struc_Elem(3,3) = 0;
-
-[Out_Img, Out_RGB_Img, S_X, count] = skeletonization(Img, Struc_Elem, 3, false);
-figure; imshow(Out_Img); figure; imshow(Out_RGB_Img);
-
-n_part_ct = 5; 
-Recon_Img = reconstruction(S_X, Struc_Elem, n_part_ct);
-figure; imshow(Recon_Img);
-
-
-% VEC045
-
-Struc_Elem = zeros(3,3);
-Struc_Elem(1,3) = 1; Struc_Elem(2,2) = 1;%Struc_Elem(3,1) = 1;
-
-[Out_Img, Out_RGB_Img, S_X, count] = skeletonization(Img, Struc_Elem, 10, false);
-figure; imshow(Out_Img); figure; imshow(Out_RGB_Img);
-
-n_part_ct = count; 
-Recon_Img = reconstruction(S_X, Struc_Elem, n_part_ct);
-figure; imshow(Recon_Img);
-
-
-%%
-clear
-
-Img = double(imread('bear.gif'));
-figure; imshow(Img); 
-
-Struc_Elem = ones(3,3);
-
-% [Out_Img, Out_RGB_Img, S_X, count] = skeletonization(Img, Struc_Elem, 3, true);
-[Out_Img, Out_RGB_Img, S_X, count] = skeletonization(Img, Struc_Elem);
-% figure; imshow(Out_Img);
-
-% count decides partial reconstruction
-% count (n_part_ct) is 1 value greater than 'n'
-% we can also directly use value of count obtained from skeletonization
-% n_part_ct = 6; 
-Recon_Img = reconstruction(S_X, Struc_Elem, n_part_ct);
-% figure; imshow(Recon_Img);
-
-% RHOMBUS
-Struc_Elem = ones(3,3);
-Struc_Elem(1,1) = 0; Struc_Elem(1,3) = 0; Struc_Elem(3,1) = 0; Struc_Elem(3,3) = 0;
-
-[Out_Img, Out_RGB_Img, S_X, count] = skeletonization(Img, Struc_Elem);
-% figure; imshow(Out_Img);
-
-n_part_ct = count; 
-Recon_Img = reconstruction(S_X, Struc_Elem, n_part_ct);
-% figure; imshow(Recon_Img);
-
-% VEC045
-Struc_Elem = zeros(3,3);
-Struc_Elem(2,2) = 1; Struc_Elem(1,3) = 1; 
-
-[Out_Img, Out_RGB_Img, S_X, count] = skeletonization(Img, Struc_Elem);
-figure; imshow(Out_Img);
-
-n_part_ct = count; 
-Recon_Img = reconstruction(S_X, Struc_Elem, n_part_ct);
-% figure; imshow(Recon_Img);
